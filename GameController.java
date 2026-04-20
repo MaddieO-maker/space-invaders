@@ -1,4 +1,9 @@
 import javax.swing.JFrame;
+import javax.swing.Timer;
+import java.awt.event.KeyListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
 /**
  * GameController.java
@@ -7,11 +12,20 @@ import javax.swing.JFrame;
  * the GameModel and GameView, creates the JFrame window, and manages
  * the game loop and event handling.
  */
-public class GameController {
+public class GameController implements KeyListener, ActionListener {
     
     private GameModel model;
     private GameView view;
     private JFrame frame;
+    private Timer gameLoop;
+    
+    // Key states for smooth movement
+    private boolean leftPressed;
+    private boolean rightPressed;
+    private boolean spacePressed;
+    
+    // Game loop timing
+    private static final int TICK_DELAY = 16; // ~60 FPS
     
     /**
      * Initialize the controller and set up the game components.
@@ -30,7 +44,82 @@ public class GameController {
         frame.setResizable(false);
         frame.setVisible(true);
         
-        // TODO: Start game loop, set up input handling, etc.
+        // Set up keyboard input
+        view.setFocusable(true);
+        view.addKeyListener(this);
+        
+        // Initialize key states
+        leftPressed = false;
+        rightPressed = false;
+        spacePressed = false;
+        
+        // Start the game loop
+        gameLoop = new Timer(TICK_DELAY, this);
+        gameLoop.start();
+    }
+    
+    /**
+     * Handle key press events.
+     */
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+            leftPressed = true;
+        } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+            rightPressed = true;
+        } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+            spacePressed = true;
+        }
+    }
+    
+    /**
+     * Handle key release events.
+     */
+    @Override
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+            leftPressed = false;
+        } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+            rightPressed = false;
+        } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+            spacePressed = false;
+        }
+    }
+    
+    /**
+     * Handle key type events (not used).
+     */
+    @Override
+    public void keyTyped(KeyEvent e) {
+        // Not needed
+    }
+    
+    /**
+     * Handle game loop tick events.
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        // Handle player input
+        if (leftPressed) {
+            model.movePlayerLeft();
+        }
+        if (rightPressed) {
+            model.movePlayerRight();
+        }
+        if (spacePressed) {
+            model.firePlayerBullet();
+        }
+        
+        // Update game state
+        model.update();
+        
+        // Redraw the view
+        view.repaint();
+        
+        // Stop the game loop if game is over
+        if (model.getLives() <= 0) {
+            gameLoop.stop();
+        }
     }
     
     /**
