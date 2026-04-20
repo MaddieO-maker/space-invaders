@@ -1,3 +1,7 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 /**
  * GameModel.java
  * 
@@ -7,17 +11,350 @@
  */
 public class GameModel {
     
+    // Game dimensions
+    private static final int GAME_WIDTH = 800;
+    private static final int GAME_HEIGHT = 600;
+    
+    // Player constants
+    private static final int PLAYER_WIDTH = 40;
+    private static final int PLAYER_HEIGHT = 30;
+    private static final int PLAYER_Y = 550;
+    private static final int PLAYER_SPEED = 5;
+    
+    // Alien constants
+    private static final int ALIEN_COLS = 11;
+    private static final int ALIEN_ROWS = 5;
+    private static final int ALIEN_WIDTH = 30;
+    private static final int ALIEN_HEIGHT = 20;
+    private static final int ALIEN_SPEED = 1;
+    
+    // Bullet constants
+    private static final int PLAYER_BULLET_SPEED = 7;
+    private static final int ALIEN_BULLET_SPEED = 3;
+    private static final int ALIEN_FIRE_RATE = 30; // Fire every N ticks on average
+    
+    // Player state
+    private int playerX;
+    
+    // Alien formation state
+    private Alien[][] alienFormation;
+    private int alienFormationX;
+    private int alienFormationY;
+    private int alienDirection; // 1 = right, -1 = left
+    private int alienTickCount;
+    
+    // Bullet state
+    private PlayerBullet playerBullet;
+    private List<AlienBullet> alienBullets;
+    
+    // Game state
+    private int score;
+    private int lives;
+    private Random random;
+    
     /**
      * Initialize the game model with starting values.
      */
     public GameModel() {
-        // TODO: Initialize game state, player, enemies, etc.
+        this.playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
+        this.score = 0;
+        this.lives = 3;
+        this.random = new Random();
+        this.alienFormationX = 50;
+        this.alienFormationY = 50;
+        this.alienDirection = 1;
+        this.alienTickCount = 0;
+        this.playerBullet = null;
+        this.alienBullets = new ArrayList<>();
+        
+        // Initialize alien formation
+        initializeAliens();
+    }
+    
+    /**
+     * Create the alien formation (5 rows of 11 aliens).
+     */
+    private void initializeAliens() {
+        alienFormation = new Alien[ALIEN_ROWS][ALIEN_COLS];
+        for (int row = 0; row < ALIEN_ROWS; row++) {
+            for (int col = 0; col < ALIEN_COLS; col++) {
+                alienFormation[row][col] = new Alien(col, row);
+            }
+        }
     }
     
     /**
      * Update game state for the current frame.
      */
     public void update() {
-        // TODO: Update player position, move enemies, check collisions, etc.
+        updatePlayerBullet();
+        updateAlienFormation();
+        updateAlienBullets();
+        checkCollisions();
+    }
+    
+    /**
+     * Move the player left.
+     */
+    public void movePlayerLeft() {
+        playerX = Math.max(0, playerX - PLAYER_SPEED);
+    }
+    
+    /**
+     * Move the player right.
+     */
+    public void movePlayerRight() {
+        playerX = Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX + PLAYER_SPEED);
+    }
+    
+    /**
+     * Fire a player bullet if one isn't already in flight.
+     */
+    public void firePlayerBullet() {
+        if (playerBullet == null) {
+            int bulletX = playerX + PLAYER_WIDTH / 2;
+            int bulletY = PLAYER_Y;
+            playerBullet = new PlayerBullet(bulletX, bulletY);
+        }
+    }
+    
+    /**
+     * Update the player bullet position.
+     */
+    private void updatePlayerBullet() {
+        if (playerBullet != null) {
+            playerBullet.y -= PLAYER_BULLET_SPEED;
+            if (playerBullet.y < 0) {
+                playerBullet = null;
+            }
+        }
+    }
+    
+    /**
+     * Update alien formation movement.
+     */
+    private void updateAlienFormation() {
+        alienFormationX += alienDirection * ALIEN_SPEED;
+        
+        // Check if formation hits the edge
+        int formationRightEdge = alienFormationX + (ALIEN_COLS * ALIEN_WIDTH);
+        int formationLeftEdge = alienFormationX;
+        
+        if (formationRightEdge >= GAME_WIDTH || formationLeftEdge <= 0) {
+            alienFormationY += 30;
+            alienDirection *= -1;
+        }
+    }
+    
+    /**
+     * Update alien bullets and fire new ones.
+     */
+    private void updateAlienBullets() {
+        // Move existing alien bullets down
+        for (int i = alienBullets.size() - 1; i >= 0; i--) {
+            AlienBullet bullet = alienBullets.get(i);
+            bullet.y += ALIEN_BULLET_SPEED;
+            if (bullet.y > GAME_HEIGHT) {
+                alienBullets.remove(i);
+            }
+        }
+        
+        // Fire new alien bullets randomly
+        alienTickCount++;
+        if (alienTickCount >= ALIEN_FIRE_RATE) {
+            alienTickCount = 0;
+            // Pick a random alien to fire
+            Alien randomAlien = getRandomLivingAlien();
+            if (randomAlien != null) {
+                int bulletX = alienFormationX + randomAlien.col * ALIEN_WIDTH + ALIEN_WIDTH / 2;
+                int bulletY = alienFormationY + randomAlien.row * ALIEN_HEIGHT + ALIEN_HEIGHT;
+                alienBullets.add(new AlienBullet(bulletX, bulletY));
+            }
+        }
+    }
+    
+    /**
+     * Get a random living alien to fire from.
+     */
+    private Alien getRandomLivingAlien() {
+        List<Alien> livingAliens = new ArrayList<>();
+        for (int row = 0; row < ALIEN_ROWS; row++) {
+            for (int col = 0; col < ALIEN_COLS; col++) {
+                if (alienFormation[row][col].alive) {
+                    livingAliens.add(alienFormation[row][col]);
+                }
+            }
+        }
+        if (livingAliens.isEmpty()) {
+            return null;
+        }
+        return livingAliens.get(random.nextInt(livingAliens.size()));
+    }
+    
+    /**
+     * Check and handle all collisions.
+     */
+    private void checkCollisions() {
+        // Check player bullet vs aliens
+        if (playerBullet != null) {
+            for (int row = 0; row < ALIEN_ROWS; row++) {
+                for (int col = 0; col < ALIEN_COLS; col++) {
+                    Alien alien = alienFormation[row][col];
+                    if (alien.alive && checkBulletAlienCollision(playerBullet, alien)) {
+                        alien.alive = false;
+                        playerBullet = null;
+                        score += 10;
+                        return; // One bullet, one hit per tick
+                    }
+                }
+            }
+        }
+        
+        // Check alien bullets vs player
+        for (int i = alienBullets.size() - 1; i >= 0; i--) {
+            AlienBullet bullet = alienBullets.get(i);
+            if (checkAlienBulletPlayerCollision(bullet)) {
+                alienBullets.remove(i);
+                lives--;
+                if (lives <= 0) {
+                    // Game over
+                }
+            }
+        }
+    }
+    
+    /**
+     * Check if a player bullet collides with an alien.
+     */
+    private boolean checkBulletAlienCollision(PlayerBullet bullet, Alien alien) {
+        int alienX = alienFormationX + alien.col * ALIEN_WIDTH;
+        int alienY = alienFormationY + alien.row * ALIEN_HEIGHT;
+        
+        return bullet.x >= alienX && bullet.x <= alienX + ALIEN_WIDTH &&
+               bullet.y >= alienY && bullet.y <= alienY + ALIEN_HEIGHT;
+    }
+    
+    /**
+     * Check if an alien bullet collides with the player.
+     */
+    private boolean checkAlienBulletPlayerCollision(AlienBullet bullet) {
+        return bullet.x >= playerX && bullet.x <= playerX + PLAYER_WIDTH &&
+               bullet.y >= PLAYER_Y && bullet.y <= PLAYER_Y + PLAYER_HEIGHT;
+    }
+    
+    // Getters for the view
+    public int getPlayerX() {
+        return playerX;
+    }
+    
+    public int getPlayerY() {
+        return PLAYER_Y;
+    }
+    
+    public int getPlayerWidth() {
+        return PLAYER_WIDTH;
+    }
+    
+    public int getPlayerHeight() {
+        return PLAYER_HEIGHT;
+    }
+    
+    public Alien[][] getAlienFormation() {
+        return alienFormation;
+    }
+    
+    public int getAlienFormationX() {
+        return alienFormationX;
+    }
+    
+    public int getAlienFormationY() {
+        return alienFormationY;
+    }
+    
+    public int getAlienWidth() {
+        return ALIEN_WIDTH;
+    }
+    
+    public int getAlienHeight() {
+        return ALIEN_HEIGHT;
+    }
+    
+    public PlayerBullet getPlayerBullet() {
+        return playerBullet;
+    }
+    
+    public List<AlienBullet> getAlienBullets() {
+        return alienBullets;
+    }
+    
+    public int getScore() {
+        return score;
+    }
+    
+    public int getLives() {
+        return lives;
+    }
+    
+    public int getGameWidth() {
+        return GAME_WIDTH;
+    }
+    
+    public int getGameHeight() {
+        return GAME_HEIGHT;
+    }
+    
+    // Inner class for aliens
+    public class Alien {
+        public int row;
+        public int col;
+        public boolean alive;
+        
+        public Alien(int col, int row) {
+            this.col = col;
+            this.row = row;
+            this.alive = true;
+        }
+    }
+    
+    // Inner class for player bullets
+    public class PlayerBullet {
+        public int x;
+        public int y;
+        private static final int WIDTH = 5;
+        private static final int HEIGHT = 15;
+        
+        public PlayerBullet(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+        
+        public int getWidth() {
+            return WIDTH;
+        }
+        
+        public int getHeight() {
+            return HEIGHT;
+        }
+    }
+    
+    // Inner class for alien bullets
+    public class AlienBullet {
+        public int x;
+        public int y;
+        private static final int WIDTH = 5;
+        private static final int HEIGHT = 10;
+        
+        public AlienBullet(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+        
+        public int getWidth() {
+            return WIDTH;
+        }
+        
+        public int getHeight() {
+            return HEIGHT;
+        }
     }
 }
