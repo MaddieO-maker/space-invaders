@@ -33,6 +33,13 @@ public class GameModel {
     private static final int ALIEN_BULLET_SPEED = 3;
     private static final int ALIEN_FIRE_RATE = 30; // Fire every N ticks on average
     
+    // Shield constants
+    private static final int NUM_SHIELDS = 4;
+    private static final int SHIELD_WIDTH = 60;
+    private static final int SHIELD_HEIGHT = 50;
+    private static final int SHIELD_Y = 350;
+    private static final int SHIELD_HEALTH = 3;
+    
     // Player state
     private int playerX;
     
@@ -46,6 +53,9 @@ public class GameModel {
     // Bullet state
     private PlayerBullet playerBullet;
     private List<AlienBullet> alienBullets;
+    
+    // Shield state
+    private List<Shield> shields;
     
     // Game state
     private int score;
@@ -66,9 +76,11 @@ public class GameModel {
         this.alienTickCount = 0;
         this.playerBullet = null;
         this.alienBullets = new ArrayList<>();
+        this.shields = new ArrayList<>();
         
-        // Initialize alien formation
+        // Initialize alien formation and shields
         initializeAliens();
+        initializeShields();
     }
     
     /**
@@ -80,6 +92,17 @@ public class GameModel {
             for (int col = 0; col < ALIEN_COLS; col++) {
                 alienFormation[row][col] = new Alien(col, row);
             }
+        }
+    }
+    
+    /**
+     * Create the shields positioned between player and aliens.
+     */
+    private void initializeShields() {
+        int spacing = GAME_WIDTH / (NUM_SHIELDS + 1);
+        for (int i = 1; i <= NUM_SHIELDS; i++) {
+            int shieldX = spacing * i - SHIELD_WIDTH / 2;
+            shields.add(new Shield(shieldX, SHIELD_Y, SHIELD_HEALTH));
         }
     }
     
@@ -210,6 +233,29 @@ public class GameModel {
             }
         }
         
+        // Check player bullet vs shields
+        if (playerBullet != null) {
+            for (Shield shield : shields) {
+                if (checkBulletShieldCollision(playerBullet, shield)) {
+                    shield.health--;
+                    playerBullet = null;
+                    return;
+                }
+            }
+        }
+        
+        // Check alien bullets vs shields
+        for (int i = alienBullets.size() - 1; i >= 0; i--) {
+            AlienBullet bullet = alienBullets.get(i);
+            for (Shield shield : shields) {
+                if (checkAlienBulletShieldCollision(bullet, shield)) {
+                    shield.health--;
+                    alienBullets.remove(i);
+                    return;
+                }
+            }
+        }
+        
         // Check alien bullets vs player
         for (int i = alienBullets.size() - 1; i >= 0; i--) {
             AlienBullet bullet = alienBullets.get(i);
@@ -221,6 +267,9 @@ public class GameModel {
                 }
             }
         }
+        
+        // Remove destroyed shields
+        shields.removeIf(shield -> shield.health <= 0);
     }
     
     /**
@@ -240,6 +289,22 @@ public class GameModel {
     private boolean checkAlienBulletPlayerCollision(AlienBullet bullet) {
         return bullet.x >= playerX && bullet.x <= playerX + PLAYER_WIDTH &&
                bullet.y >= PLAYER_Y && bullet.y <= PLAYER_Y + PLAYER_HEIGHT;
+    }
+    
+    /**
+     * Check if a player bullet collides with a shield.
+     */
+    private boolean checkBulletShieldCollision(PlayerBullet bullet, Shield shield) {
+        return bullet.x >= shield.x && bullet.x <= shield.x + SHIELD_WIDTH &&
+               bullet.y >= shield.y && bullet.y <= shield.y + SHIELD_HEIGHT;
+    }
+    
+    /**
+     * Check if an alien bullet collides with a shield.
+     */
+    private boolean checkAlienBulletShieldCollision(AlienBullet bullet, Shield shield) {
+        return bullet.x >= shield.x && bullet.x <= shield.x + SHIELD_WIDTH &&
+               bullet.y >= shield.y && bullet.y <= shield.y + SHIELD_HEIGHT;
     }
     
     // Getters for the view
@@ -285,6 +350,10 @@ public class GameModel {
     
     public List<AlienBullet> getAlienBullets() {
         return alienBullets;
+    }
+    
+    public List<Shield> getShields() {
+        return shields;
     }
     
     public int getScore() {
@@ -355,6 +424,27 @@ public class GameModel {
         
         public int getHeight() {
             return HEIGHT;
+        }
+    }
+    
+    // Inner class for shields
+    public class Shield {
+        public int x;
+        public int y;
+        public int health;
+        
+        public Shield(int x, int y, int health) {
+            this.x = x;
+            this.y = y;
+            this.health = health;
+        }
+        
+        public int getWidth() {
+            return SHIELD_WIDTH;
+        }
+        
+        public int getHeight() {
+            return SHIELD_HEIGHT;
         }
     }
 }

@@ -49,6 +49,7 @@ public class GameView extends JPanel {
         
         // Draw all game elements
         drawAlienFormation(g2d);
+        drawShields(g2d);
         drawPlayer(g2d);
         drawPlayerBullet(g2d);
         drawAlienBullets(g2d);
@@ -108,6 +109,31 @@ public class GameView extends JPanel {
                     g.setColor(ALIEN_COLOR);
                 }
             }
+        }
+    }
+    
+    /**
+     * Draw the shields.
+     */
+    private void drawShields(Graphics2D g) {
+        g.setColor(new Color(0, 200, 0)); // Green shields
+        for (GameModel.Shield shield : model.getShields()) {
+            g.fillRect(shield.x, shield.y, shield.getWidth(), shield.getHeight());
+            
+            // Draw health indicator - decrease opacity based on damage
+            int healthOpacity = (shield.health * 85); // 0-255 based on health
+            g.setColor(new Color(0, 0, 0, 255 - healthOpacity));
+            g.fillRect(shield.x, shield.y, shield.getWidth(), shield.getHeight());
+            g.setColor(new Color(0, 200, 0));
+            
+            // Draw text showing health
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 12));
+            String healthText = String.valueOf(shield.health);
+            int textWidth = g.getFontMetrics().stringWidth(healthText);
+            int textX = shield.x + (shield.getWidth() - textWidth) / 2;
+            int textY = shield.y + shield.getHeight() / 2 + 5;
+            g.drawString(healthText, textX, textY);
         }
     }
     
