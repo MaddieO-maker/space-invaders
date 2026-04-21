@@ -27,6 +27,12 @@ public class GameModel {
     private static final int ALIEN_WIDTH = 30;
     private static final int ALIEN_HEIGHT = 20;
     private static final int ALIEN_SPEED = 1;
+    private static final double ALIEN_SPEED_MULTIPLIER = 1.01; // Increase by 1% per alien destroyed
+    
+    // Timer constants
+    private static final int BASE_TIMER_INTERVAL = 16; // ~60 FPS in milliseconds
+    private static final int MIN_TIMER_INTERVAL = 8; // Minimum interval to prevent too-fast gameplay
+    private static final int INTERVAL_DECREMENT_PER_ALIEN = 1; // Milliseconds faster per alien
     
     // Bullet constants
     private static final int PLAYER_BULLET_SPEED = 7;
@@ -49,6 +55,7 @@ public class GameModel {
     private int alienFormationY;
     private int alienDirection; // 1 = right, -1 = left
     private int alienTickCount;
+    private double currentAlienSpeed;
     
     // Bullet state
     private PlayerBullet playerBullet;
@@ -74,6 +81,7 @@ public class GameModel {
         this.alienFormationY = 50;
         this.alienDirection = 1;
         this.alienTickCount = 0;
+        this.currentAlienSpeed = (double) ALIEN_SPEED;
         this.playerBullet = null;
         this.alienBullets = new ArrayList<>();
         this.shields = new ArrayList<>();
@@ -157,7 +165,7 @@ public class GameModel {
      * Update alien formation movement.
      */
     private void updateAlienFormation() {
-        alienFormationX += alienDirection * ALIEN_SPEED;
+        alienFormationX += alienDirection * (int) currentAlienSpeed;
         
         // Check if formation hits the edge
         int formationRightEdge = alienFormationX + (ALIEN_COLS * ALIEN_WIDTH);
@@ -227,6 +235,7 @@ public class GameModel {
                         alien.alive = false;
                         playerBullet = null;
                         score += 10;
+                        currentAlienSpeed *= ALIEN_SPEED_MULTIPLIER;
                         return; // One bullet, one hit per tick
                     }
                 }
@@ -370,6 +379,18 @@ public class GameModel {
     
     public int getGameHeight() {
         return GAME_HEIGHT;
+    }
+    
+    /**
+     * Get the recommended timer interval in milliseconds.
+     * The interval decreases as more aliens are destroyed, speeding up the game.
+     * 
+     * @return The recommended timer interval in milliseconds
+     */
+    public int getRecommendedTimerInterval() {
+        int aliensDestroyed = (score / 10); // 10 points per alien
+        int recommendedInterval = BASE_TIMER_INTERVAL - (aliensDestroyed * INTERVAL_DECREMENT_PER_ALIEN);
+        return Math.max(MIN_TIMER_INTERVAL, recommendedInterval);
     }
     
     // Inner class for aliens

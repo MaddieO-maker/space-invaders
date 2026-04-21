@@ -112,6 +112,10 @@ public class GameController implements KeyListener, ActionListener {
         
         // Update game state
         model.update();
+           
+        // Adjust timer speed based on difficulty
+        int recommendedInterval = model.getRecommendedTimerInterval();
+        gameLoop.setDelay(recommendedInterval);
         
         // Redraw the view
         view.repaint();
