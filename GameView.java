@@ -49,7 +49,28 @@ public class GameView extends JPanel {
         
         // Draw all game elements
         drawAlienFormation(g2d);
-        drawShields(g2d);
+        
+        // Draw shields with health-based color (green to red)
+        for (GameModel.Shield shield : model.getShields()) {
+            // Color gradient: health 3 = green, health 2 = yellow, health 1 = red
+            Color shieldColor;
+            if (shield.health >= 3) {
+                shieldColor = Color.GREEN;
+            } else if (shield.health == 2) {
+                shieldColor = Color.YELLOW;
+            } else {
+                shieldColor = Color.RED;
+            }
+            
+            g2d.setColor(shieldColor);
+            g2d.fillRect(shield.x, shield.y, shield.getWidth(), shield.getHeight());
+            
+            // Draw border
+            g2d.setColor(Color.WHITE);
+            g2d.setStroke(new java.awt.BasicStroke(2));
+            g2d.drawRect(shield.x, shield.y, shield.getWidth(), shield.getHeight());
+        }
+        
         drawPlayer(g2d);
         drawPlayerBullet(g2d);
         drawAlienBullets(g2d);
@@ -109,31 +130,6 @@ public class GameView extends JPanel {
                     g.setColor(ALIEN_COLOR);
                 }
             }
-        }
-    }
-    
-    /**
-     * Draw the shields.
-     */
-    private void drawShields(Graphics2D g) {
-        g.setColor(new Color(0, 200, 0)); // Green shields
-        for (GameModel.Shield shield : model.getShields()) {
-            g.fillRect(shield.x, shield.y, shield.getWidth(), shield.getHeight());
-            
-            // Draw health indicator - decrease opacity based on damage
-            int healthOpacity = (shield.health * 85); // 0-255 based on health
-            g.setColor(new Color(0, 0, 0, 255 - healthOpacity));
-            g.fillRect(shield.x, shield.y, shield.getWidth(), shield.getHeight());
-            g.setColor(new Color(0, 200, 0));
-            
-            // Draw text showing health
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 12));
-            String healthText = String.valueOf(shield.health);
-            int textWidth = g.getFontMetrics().stringWidth(healthText);
-            int textX = shield.x + (shield.getWidth() - textWidth) / 2;
-            int textY = shield.y + shield.getHeight() / 2 + 5;
-            g.drawString(healthText, textX, textY);
         }
     }
     
