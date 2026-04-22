@@ -33,3 +33,10 @@ Successfully added "Game Over" and "Success" Screen
 
 Prompt 11: In GameModel.java, call "Game Over" and show Game Over screen when alien ship hits player ship
 Prompt 12: "Press R to replay" on final game screen doesn't work. Make sure if "R" is pressed on keyboard on Game Over or Success screen that game restarts
+SUCCESS - COMMIT
+
+Prompt 12: In GameView.java, add white dots over black background to look like stars. Have the stars move slowly downward to imply movement of ships.
+SUCCESS
+
+Prompt 13: In GameView.Java, instead of red blocks representing aliens, use this image: 👽
+SUCCESS - (Not green, but success) - COMMIT

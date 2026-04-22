@@ -4,6 +4,9 @@ import java.awt.Graphics2D;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.RenderingHints;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * GameView.java
@@ -15,6 +18,13 @@ import java.awt.RenderingHints;
 public class GameView extends JPanel {
     
     private GameModel model;
+    private List<Star> stars;
+    private Random random;
+    
+    // Star constants
+    private static final int NUM_STARS = 50;
+    private static final int STAR_SPEED = 1; // Pixels per frame
+    private static final int STAR_SIZE = 2; // Pixel diameter
     
     // Colors
     private static final Color BACKGROUND_COLOR = Color.BLACK;
@@ -32,8 +42,22 @@ public class GameView extends JPanel {
      */
     public GameView(GameModel model) {
         this.model = model;
+        this.random = new Random();
         setBackground(BACKGROUND_COLOR);
         setDoubleBuffered(true);
+        initializeStars();
+    }
+    
+    /**
+     * Initialize the star field with random stars.
+     */
+    private void initializeStars() {
+        stars = new ArrayList<>();
+        for (int i = 0; i < NUM_STARS; i++) {
+            int x = random.nextInt(model.getGameWidth());
+            int y = random.nextInt(model.getGameHeight());
+            stars.add(new Star(x, y));
+        }
     }
     
     /**
@@ -46,6 +70,10 @@ public class GameView extends JPanel {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        // Update and draw stars first (background)
+        updateStars();
+        drawStars(g2d);
         
         // Draw all game elements
         drawAlienFormation(g2d);
@@ -83,6 +111,30 @@ public class GameView extends JPanel {
     }
     
     /**
+     * Update star positions each frame.
+     */
+    private void updateStars() {
+        for (Star star : stars) {
+            star.y += STAR_SPEED;
+            // Wrap around when star reaches bottom
+            if (star.y > model.getGameHeight()) {
+                star.y = 0;
+                star.x = random.nextInt(model.getGameWidth());
+            }
+        }
+    }
+    
+    /**
+     * Draw all stars in the field.
+     */
+    private void drawStars(Graphics2D g) {
+        g.setColor(Color.WHITE);
+        for (Star star : stars) {
+            g.fillOval(star.x, star.y, STAR_SIZE, STAR_SIZE);
+        }
+    }
+    
+    /**
      * Draw the player ship.
      */
     private void drawPlayer(Graphics2D g) {
@@ -115,19 +167,14 @@ public class GameView extends JPanel {
         int alienWidth = model.getAlienWidth();
         int alienHeight = model.getAlienHeight();
         
-        g.setColor(ALIEN_COLOR);
+        g.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
         for (int row = 0; row < aliens.length; row++) {
             for (int col = 0; col < aliens[row].length; col++) {
                 if (aliens[row][col].alive) {
                     int x = formationX + col * alienWidth;
                     int y = formationY + row * alienHeight;
-                    g.fillRect(x, y, alienWidth, alienHeight);
-                    
-                    // Draw simple eyes
-                    g.setColor(Color.BLACK);
-                    g.fillRect(x + 5, y + 5, 3, 3);
-                    g.fillRect(x + alienWidth - 8, y + 5, 3, 3);
-                    g.setColor(ALIEN_COLOR);
+                    // Draw alien emoji
+                    g.drawString("👽", x + 5, y + 20);
                 }
             }
         }
@@ -217,5 +264,18 @@ public class GameView extends JPanel {
         int replayX = (model.getGameWidth() - replayWidth) / 2;
         int replayY = y + 120;
         g.drawString(replayText, replayX, replayY);
+    }
+    
+    /**
+     * Inner class representing a star in the background.
+     */
+    private static class Star {
+        int x;
+        int y;
+        
+        Star(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
     }
 }
