@@ -27,3 +27,9 @@ Worked, but made the alien ship too fast to be enjoyable
 
 Prompt 9: In GameModel.java, increase alien movement speed by 1% for each alien destroyed. Do not touch view
 SUCCESS - COMMIT
+
+Prompt 10: In GameModel.java, end the game if alien ship is completely destroyed or alien ship reaches player ship. Create a "Success!" end screen if alien ship is destroyed and a "Game Over" end screen if alien ship reaches player ship. Each end screen should have final score and a replay button.
+Successfully added "Game Over" and "Success" Screen
+
+Prompt 11: In GameModel.java, call "Game Over" and show Game Over screen when alien ship hits player ship
+Prompt 12: "Press R to replay" on final game screen doesn't work. Make sure if "R" is pressed on keyboard on Game Over or Success screen that game restarts

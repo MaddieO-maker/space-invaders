@@ -68,15 +68,39 @@ public class GameModel {
     private int score;
     private int lives;
     private Random random;
+    private GameState gameState;
+    
+    // Game state enum and end reason
+    public enum GameState {
+        PLAYING,
+        WON,
+        LOST
+    }
+    
+    public enum EndReason {
+        ALIENS_DESTROYED,    // Win condition: player destroyed all aliens
+        ALIENS_REACHED,      // Lose condition: alien formation reached player
+        NO_LIVES_LEFT        // Lose condition: player lost all lives
+    }
+    
+    private EndReason endReason;
     
     /**
      * Initialize the game model with starting values.
      */
     public GameModel() {
+        this.random = new Random();
+        resetGame();
+    }
+    
+    /**
+     * Reset the game to its initial state.
+     * Used both during initialization and when restarting after game over.
+     */
+    public void resetGame() {
         this.playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
         this.score = 0;
         this.lives = 3;
-        this.random = new Random();
         this.alienFormationX = 50;
         this.alienFormationY = 50;
         this.alienDirection = 1;
@@ -85,6 +109,8 @@ public class GameModel {
         this.playerBullet = null;
         this.alienBullets = new ArrayList<>();
         this.shields = new ArrayList<>();
+        this.gameState = GameState.PLAYING;
+        this.endReason = null;
         
         // Initialize alien formation and shields
         initializeAliens();
@@ -118,10 +144,17 @@ public class GameModel {
      * Update game state for the current frame.
      */
     public void update() {
+        if (gameState != GameState.PLAYING) {
+            return; // Don't update if game is over
+        }
+        
         updatePlayerBullet();
         updateAlienFormation();
         updateAlienBullets();
         checkCollisions();
+        
+        // Check win/lose conditions
+        checkWinLoseConditions();
     }
     
     /**
@@ -282,6 +315,44 @@ public class GameModel {
     }
     
     /**
+     * Check win/lose conditions and update game state.
+     */
+    private void checkWinLoseConditions() {
+        // Check if all aliens are destroyed (win condition)
+        boolean allAliensDestroyed = true;
+        for (int row = 0; row < ALIEN_ROWS; row++) {
+            for (int col = 0; col < ALIEN_COLS; col++) {
+                if (alienFormation[row][col].alive) {
+                    allAliensDestroyed = false;
+                    break;
+                }
+            }
+            if (!allAliensDestroyed) break;
+        }
+        
+        if (allAliensDestroyed) {
+            gameState = GameState.WON;
+            endReason = EndReason.ALIENS_DESTROYED;
+            return;
+        }
+        
+        // Check if aliens reached the player (lose condition)
+        int alienFormationBottom = alienFormationY + (ALIEN_ROWS * ALIEN_HEIGHT);
+        if (alienFormationBottom >= PLAYER_Y) {
+            gameState = GameState.LOST;
+            endReason = EndReason.ALIENS_REACHED;
+            return;
+        }
+        
+        // Check if player has no lives left (lose condition)
+        if (lives <= 0) {
+            gameState = GameState.LOST;
+            endReason = EndReason.NO_LIVES_LEFT;
+            return;
+        }
+    }
+    
+    /**
      * Check if a player bullet collides with an alien.
      */
     private boolean checkBulletAlienCollision(PlayerBullet bullet, Alien alien) {
@@ -391,6 +462,47 @@ public class GameModel {
         int aliensDestroyed = (score / 10); // 10 points per alien
         int recommendedInterval = BASE_TIMER_INTERVAL - (aliensDestroyed * INTERVAL_DECREMENT_PER_ALIEN);
         return Math.max(MIN_TIMER_INTERVAL, recommendedInterval);
+    }
+    
+    /**
+     * Get the current game state.
+     * 
+     * @return The current GameState
+     */
+    public GameState getGameState() {
+        return gameState;
+    }
+    
+    /**
+     * Get the reason the game ended.
+     * 
+     * @return The EndReason, or null if game is still playing
+     */
+    public EndReason getEndReason() {
+        return endReason;
+    }
+    
+    /**
+     * Get the end screen message and details.
+     * 
+     * @return A string describing the end screen (title and final score)
+     */
+    public String getEndScreenMessage() {
+        if (gameState == GameState.WON) {
+            return "Success!";
+        } else if (gameState == GameState.LOST) {
+            return "Game Over";
+        }
+        return "";
+    }
+    
+    /**
+     * Get the final score to display on the end screen.
+     * 
+     * @return The final score
+     */
+    public int getFinalScore() {
+        return score;
     }
     
     // Inner class for aliens

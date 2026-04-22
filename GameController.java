@@ -69,6 +69,12 @@ public class GameController implements KeyListener, ActionListener {
             rightPressed = true;
         } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             spacePressed = true;
+        } else if (e.getKeyCode() == KeyEvent.VK_R) {
+            // Restart the game if R is pressed and game is not playing
+            if (model.getGameState() != GameModel.GameState.PLAYING) {
+                model.resetGame();
+                gameLoop.start();
+            }
         }
     }
     
@@ -83,6 +89,8 @@ public class GameController implements KeyListener, ActionListener {
             rightPressed = false;
         } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             spacePressed = false;
+        } else if (e.getKeyCode() == KeyEvent.VK_R) {
+            // R key release - not needed for functionality
         }
     }
     
@@ -121,7 +129,7 @@ public class GameController implements KeyListener, ActionListener {
         view.repaint();
         
         // Stop the game loop if game is over
-        if (model.getLives() <= 0) {
+        if (model.getGameState() != GameModel.GameState.PLAYING) {
             gameLoop.stop();
         }
     }

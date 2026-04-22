@@ -76,9 +76,9 @@ public class GameView extends JPanel {
         drawAlienBullets(g2d);
         drawUI(g2d);
         
-        // Draw game over message if lives are depleted
-        if (model.getLives() <= 0) {
-            drawGameOver(g2d);
+        // Draw end screen if game has ended
+        if (model.getGameState() != GameModel.GameState.PLAYING) {
+            drawEndScreen(g2d);
         }
     }
     
@@ -173,29 +173,49 @@ public class GameView extends JPanel {
     }
     
     /**
-     * Draw the centered game-over message.
+     * Draw the end screen (win or lose) with appropriate message and final score.
      */
-    private void drawGameOver(Graphics2D g) {
+    private void drawEndScreen(Graphics2D g) {
         // Semi-transparent overlay
         g.setColor(new Color(0, 0, 0, 150));
         g.fillRect(0, 0, model.getGameWidth(), model.getGameHeight());
         
-        // Game over text
-        g.setColor(GAME_OVER_COLOR);
+        // Determine message and color based on game state
+        String endMessage;
+        Color messageColor;
+        
+        if (model.getGameState() == GameModel.GameState.WON) {
+            endMessage = "Success!";
+            messageColor = Color.GREEN;
+        } else {
+            endMessage = "Game Over";
+            messageColor = GAME_OVER_COLOR;
+        }
+        
+        // End screen title text
+        g.setColor(messageColor);
         g.setFont(new Font("Arial", Font.BOLD, 64));
-        String gameOverText = "GAME OVER";
-        int textWidth = g.getFontMetrics().stringWidth(gameOverText);
+        int textWidth = g.getFontMetrics().stringWidth(endMessage);
         int x = (model.getGameWidth() - textWidth) / 2;
         int y = (model.getGameHeight() / 2) - 40;
-        g.drawString(gameOverText, x, y);
+        g.drawString(endMessage, x, y);
         
         // Final score
         g.setColor(TEXT_COLOR);
         g.setFont(new Font("Arial", Font.PLAIN, 32));
-        String finalScoreText = "Final Score: " + model.getScore();
+        String finalScoreText = "Final Score: " + model.getFinalScore();
         int scoreWidth = g.getFontMetrics().stringWidth(finalScoreText);
         int scoreX = (model.getGameWidth() - scoreWidth) / 2;
         int scoreY = y + 60;
         g.drawString(finalScoreText, scoreX, scoreY);
+        
+        // Replay button hint
+        g.setColor(TEXT_COLOR);
+        g.setFont(new Font("Arial", Font.PLAIN, 20));
+        String replayText = "Press R to replay";
+        int replayWidth = g.getFontMetrics().stringWidth(replayText);
+        int replayX = (model.getGameWidth() - replayWidth) / 2;
+        int replayY = y + 120;
+        g.drawString(replayText, replayX, replayY);
     }
 }
